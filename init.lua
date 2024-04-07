@@ -91,7 +91,7 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 -- Set to true if you have a Nerd Font installed
-vim.g.have_nerd_font = false
+vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
 -- See `:help vim.opt`
@@ -239,6 +239,26 @@ require('lazy').setup({
 
   -- "gc" to comment visual regions/lines
   { 'numToStr/Comment.nvim', opts = {} },
+
+  -- plugins that I have added
+
+  -- "nvim.hop"
+  {
+    'smoka7/hop.nvim',
+    event = 'VeryLazy',
+    version = '*',
+    opts = {},
+  },
+  {
+    'nvimdev/dashboard-nvim',
+    event = 'VimEnter',
+    config = function()
+      require('dashboard').setup {
+        -- config
+      }
+    end,
+    dependencies = { { 'nvim-tree/nvim-web-devicons' } },
+  },
 
   -- Here is a more advanced example where we pass configuration
   -- options to `gitsigns.nvim`. This is equivalent to the following Lua:
@@ -872,3 +892,21 @@ require('lazy').setup({
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
+
+-- config for hop.nvim
+-- TODO: move into lazy nvim content
+local hop = require 'hop'
+local directions = require('hop.hint').HintDirection
+
+vim.keymap.set('', 'f', function()
+  hop.hint_char1 { direction = directions.AFTER_CURSOR, current_line_only = true }
+end, { remap = true })
+vim.keymap.set('', 'F', function()
+  hop.hint_char1 { direction = directions.BEFORE_CURSOR, current_line_only = true }
+end, { remap = true })
+vim.keymap.set('', 't', function()
+  hop.hint_char1 { direction = directions.AFTER_CURSOR, current_line_only = true, hint_offset = -1 }
+end, { remap = true })
+vim.keymap.set('', 'T', function()
+  hop.hint_char1 { direction = directions.BEFORE_CURSOR, current_line_only = true, hint_offset = 1 }
+end, { remap = true })
