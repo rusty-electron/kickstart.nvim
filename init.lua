@@ -250,6 +250,14 @@ require('lazy').setup({
     opts = {},
   },
   {
+    'shortcuts/no-neck-pain.nvim',
+    event = 'VeryLazy',
+    version = '*',
+    config = function()
+      require('no-neck-pain').setup {}
+    end,
+  },
+  {
     'nvimdev/dashboard-nvim',
     event = 'VimEnter',
     config = function()
@@ -722,7 +730,7 @@ require('lazy').setup({
           -- Accept ([y]es) the completion.
           --  This will auto-import if your LSP supports it.
           --  This will expand snippets if the LSP sent a snippet.
-          ['<C-y>'] = cmp.mapping.confirm { select = true },
+          ['<CR>'] = cmp.mapping.confirm { select = true },
 
           -- Manually trigger a completion from nvim-cmp.
           --  Generally you don't need this, because nvim-cmp will display
@@ -910,3 +918,5 @@ end, { remap = true })
 vim.keymap.set('', 'T', function()
   hop.hint_char1 { direction = directions.BEFORE_CURSOR, current_line_only = true, hint_offset = 1 }
 end, { remap = true })
+
+vim.keymap.set('n', '<leader>j', '<cmd>HopWord<CR>')
