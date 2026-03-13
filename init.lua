@@ -1,3 +1,8 @@
+--
+-- TODO: make the config my very own
+-- [ ] organize into separate files
+-- [ ] remove unwanted plugins
+-- [ ] organize which key (fix warnings and set up my own keymaps)
 --[[
 
 =====================================================================
@@ -102,7 +107,10 @@ vim.g.have_nerd_font = true
 vim.opt.number = true
 -- You can also add relative line numbers, to help with jumping.
 --  Experiment for yourself to see if you like it!
--- vim.opt.relativenumber = true
+vim.opt.relativenumber = true
+
+-- allow virtualedit in visual block mode
+vim.opt.virtualedit = 'block'
 
 -- Enable mouse mode, can be useful for resizing splits for example!
 vim.opt.mouse = 'a'
@@ -207,10 +215,19 @@ vim.api.nvim_create_autocmd('TextYankPost', {
 -- [[ Install `lazy.nvim` plugin manager ]]
 --    See `:help lazy.nvim.txt` or https://github.com/folke/lazy.nvim for more info
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
+
 if not vim.loop.fs_stat(lazypath) then
   local lazyrepo = 'https://github.com/folke/lazy.nvim.git'
-  vim.fn.system { 'git', 'clone', '--filter=blob:none', '--branch=stable', lazyrepo, lazypath }
+  vim.fn.system {
+    'git',
+    'clone',
+    '--filter=blob:none',
+    '--branch=stable',
+    lazyrepo,
+    lazypath,
+  }
 end ---@diagnostic disable-next-line: undefined-field
+
 vim.opt.rtp:prepend(lazypath)
 
 -- [[ Configure and install plugins ]]
@@ -225,6 +242,36 @@ vim.opt.rtp:prepend(lazypath)
 --
 -- NOTE: Here is where you install your plugins.
 require('lazy').setup({
+  -- for python language
+  -- plugin to set up terminals
+  {
+    'akinsho/toggleterm.nvim',
+    version = '*',
+    opts = {},
+  },
+  -- plugin to configure the python environment being used for lsp, dap, etc.
+  {
+    'linux-cultist/venv-selector.nvim',
+    dependencies = {
+      'neovim/nvim-lspconfig',
+      -- 'mfussenegger/nvim-dap',
+      -- 'mfussenegger/nvim-dap-python', --optional
+      {
+        'nvim-telescope/telescope.nvim',
+        branch = '0.1.x',
+        dependencies = { 'nvim-lua/plenary.nvim' },
+      },
+    },
+    lazy = true, -- default was false
+    branch = 'regexp', -- This is the regexp branch, use this for the new version
+    keys = {
+      { ',v', '<cmd>VenvSelect<cr>' },
+    },
+    ---@type venv-selector.Config
+    opts = {
+      -- Your settings go here
+    },
+  },
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
   'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
 
@@ -250,8 +297,8 @@ require('lazy').setup({
     opts = {},
   },
   {
-    'shortcuts/no-neck-pain.nvim',
-    event = 'VeryLazy',
+    'shortcuts/no-neck-pain.nvim', -- centers the buffer in the middle of the screen
+    event = 'VeryLazy', -- activate as :NoNeckPain
     version = '*',
     config = function()
       require('no-neck-pain').setup {}
@@ -442,9 +489,30 @@ require('lazy').setup({
       -- NOTE: `opts = {}` is the same as calling `require('fidget').setup({})`
       { 'j-hui/fidget.nvim', opts = {} },
 
-      -- `neodev` configures Lua LSP for your Neovim config, runtime and plugins
+      -- `lazydev` configures Lua LSP for your Neovim config, runtime and plugins
       -- used for completion, annotations and signatures of Neovim apis
-      { 'folke/neodev.nvim', opts = {} },
+      --
+      {
+        'folke/lazydev.nvim',
+        ft = 'lua', -- only load on lua files
+        opts = {
+          library = {
+            -- See the configuration section for more details
+            -- Load luvit types when the `vim.uv` word is found
+            { path = '${3rd}/luv/library', words = { 'vim%.uv' } },
+          },
+        },
+      },
+      { -- optional cmp completion source for require statements and module annotations
+        'hrsh7th/nvim-cmp',
+        opts = function(_, opts)
+          opts.sources = opts.sources or {}
+          table.insert(opts.sources, {
+            name = 'lazydev',
+            group_index = 0, -- set group index to 0 to skip loading LuaLS completions
+          })
+        end,
+      },
     },
     config = function()
       -- Brief aside: **What is LSP?**
@@ -585,11 +653,14 @@ require('lazy').setup({
           -- capabilities = {},
           settings = {
             Lua = {
+              diagnostics = {
+                globals = { 'vim' }, -- recognize 'vim' as a global variable
+                disable = { 'missing-fields' },
+              },
               completion = {
                 callSnippet = 'Replace',
               },
               -- You can toggle below to ignore Lua_LS's noisy `missing-fields` warnings
-              -- diagnostics = { disable = { 'missing-fields' } },
             },
           },
         },
@@ -841,7 +912,18 @@ require('lazy').setup({
         additional_vim_regex_highlighting = { 'ruby' },
       },
       indent = { enable = true, disable = { 'ruby' } },
+
+      --    incremental_selection = {
+      --      enable = true,
+      --      keymaps = {
+      --        init_selection = "gnn",
+      --        node_incremental = "grn",
+      --        scope_incremental = "grc",
+      --        node_decremental = "grm",
+      -- },
+      -- },
     },
+
     config = function(_, opts)
       -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
 
