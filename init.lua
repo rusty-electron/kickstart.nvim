@@ -32,6 +32,7 @@ vim.keymap.set('n', ']d', function() vim.diagnostic.jump { count = 1 } end, { de
 vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Show diagnostic error messages' })
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic quickfix list' })
 vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
+vim.keymap.set('t', '<C-w>', '<Esc><Esc><C-w>', { remap = true, desc = 'Exit terminal mode and start window command' })
 vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left window' })
 vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
@@ -53,6 +54,14 @@ vim.api.nvim_create_autocmd('TextYankPost', {
   callback = function() vim.hl.on_yank() end,
 })
 
+vim.api.nvim_create_autocmd({ 'TermOpen', 'BufEnter', 'WinEnter' }, {
+  desc = 'Automatically enter insert mode when switching to a terminal pane',
+  group = vim.api.nvim_create_augroup('kickstart-term-insert', { clear = true }),
+  callback = function(event)
+    if vim.bo[event.buf].buftype == 'terminal' then vim.cmd.startinsert() end
+  end,
+})
+
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
 if not (vim.uv or vim.loop).fs_stat(lazypath) then
   local lazyrepo = 'https://github.com/folke/lazy.nvim.git'
@@ -68,9 +77,19 @@ require('lazy').setup({
   { 'NMAC427/guess-indent.nvim', opts = {} },
   { 'numToStr/Comment.nvim', opts = {} },
   {
+    'lukas-reineke/indent-blankline.nvim',
+    main = 'ibl',
+    opts = {
+      indent = { char = '│', tab_char = '│' },
+      scope = { enabled = true, show_start = false, show_end = false },
+    },
+  },
+  {
     'akinsho/toggleterm.nvim',
     version = '*',
-    opts = {},
+    opts = {
+      persist_mode = false,
+    },
   },
   {
     'linux-cultist/venv-selector.nvim',
@@ -289,7 +308,16 @@ require('lazy').setup({
       },
       'mason-org/mason-lspconfig.nvim',
       'WhoIsSethDaniel/mason-tool-installer.nvim',
-      { 'j-hui/fidget.nvim', opts = {} },
+      {
+        'j-hui/fidget.nvim',
+        opts = {
+          notification = {
+            window = {
+              align = 'avoid_cursor',
+            },
+          },
+        },
+      },
     },
     config = function()
       vim.api.nvim_create_autocmd('LspAttach', {
@@ -426,6 +454,7 @@ require('lazy').setup({
     opts = {
       keymap = {
         preset = 'default',
+        ['<CR>'] = { 'select_and_accept', 'fallback' },
       },
       appearance = {
         nerd_font_variant = 'mono',
