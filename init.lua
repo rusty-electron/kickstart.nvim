@@ -62,6 +62,14 @@ vim.api.nvim_create_autocmd({ 'TermOpen', 'BufEnter', 'WinEnter' }, {
   end,
 })
 
+-- naive terminal splits
+vim.api.nvim_create_user_command('Term', 'split | terminal', {
+    desc = 'naive terminal in a horizontal split'}
+)
+vim.api.nvim_create_user_command('Vterm', 'vsplit | terminal', {
+    desc = 'naive terminal in a vertical split'}
+)
+
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
 if not (vim.uv or vim.loop).fs_stat(lazypath) then
   local lazyrepo = 'https://github.com/folke/lazy.nvim.git'
@@ -148,6 +156,29 @@ require('lazy').setup({
     opts = {},
   },
   {
+    'folke/persistence.nvim',
+    event = 'BufReadPre',
+    opts = {},
+    keys = {
+      { '<leader>ps', function() require('persistence').load() end, desc = '[P]ersistence: restore [S]ession for cwd' },
+    },
+    init = function()
+      -- VimLeavePre may not run if the laptop shuts down with nvim open, so also save while working.
+      vim.api.nvim_create_autocmd({ 'BufEnter', 'FocusLost' }, {
+        group = vim.api.nvim_create_augroup('kickstart-persistence-save', { clear = true }),
+        callback = function()
+          -- Skip while a session loads, and skip with no file buffers, so a good session is not overwritten.
+          if vim.g.SessionLoad or not package.loaded.persistence or not require('persistence').active() then return end
+          for _, b in ipairs(vim.api.nvim_list_bufs()) do
+            if vim.bo[b].buflisted and vim.bo[b].buftype == '' and vim.api.nvim_buf_get_name(b) ~= '' and not vim.tbl_contains({ 'gitcommit', 'gitrebase' }, vim.bo[b].filetype) then
+              return require('persistence').save()
+            end
+          end
+        end,
+      })
+    end,
+  },
+  {
     'nvimdev/dashboard-nvim',
     event = 'VimEnter',
     dependencies = { 'nvim-tree/nvim-web-devicons' },
@@ -170,6 +201,12 @@ require('lazy').setup({
             desc = 'Find File',
             key = 'f',
             action = 'Telescope find_files',
+          },
+          {
+            icon = '󰯅  ',
+            desc = 'Restore Session',
+            key = 's',
+            action = function() require('persistence').load() end,
           },
           {
             icon = '  ',
@@ -215,6 +252,42 @@ require('lazy').setup({
         topdelete = { text = '‾' },
         changedelete = { text = '~' },
       },
+      on_attach = function(bufnr)
+        local gitsigns = require 'gitsigns'
+        local map = function(mode, keys, func, desc) vim.keymap.set(mode, keys, func, { buffer = bufnr, desc = desc }) end
+
+        map('n', ']c', function()
+          if vim.wo.diff then
+            vim.cmd.normal { ']c', bang = true }
+          else
+            gitsigns.nav_hunk 'next'
+          end
+        end, 'Jump to next git [c]hange')
+        map('n', '[c', function()
+          if vim.wo.diff then
+            vim.cmd.normal { '[c', bang = true }
+          else
+            gitsigns.nav_hunk 'prev'
+          end
+        end, 'Jump to previous git [c]hange')
+
+        map('v', '<leader>hs', function() gitsigns.stage_hunk { vim.fn.line '.', vim.fn.line 'v' } end, 'git [s]tage hunk')
+        map('v', '<leader>hr', function() gitsigns.reset_hunk { vim.fn.line '.', vim.fn.line 'v' } end, 'git [r]eset hunk')
+        map('n', '<leader>hs', gitsigns.stage_hunk, 'git [s]tage hunk')
+        map('n', '<leader>hr', gitsigns.reset_hunk, 'git [r]eset hunk')
+        map('n', '<leader>hS', gitsigns.stage_buffer, 'git [S]tage buffer')
+        map('n', '<leader>hR', gitsigns.reset_buffer, 'git [R]eset buffer')
+        map('n', '<leader>hp', gitsigns.preview_hunk, 'git [p]review hunk')
+        map('n', '<leader>hi', gitsigns.preview_hunk_inline, 'git preview hunk [i]nline')
+        map('n', '<leader>hb', function() gitsigns.blame_line { full = true } end, 'git [b]lame line')
+        map('n', '<leader>hd', gitsigns.diffthis, 'git [d]iff against index')
+        map('n', '<leader>hD', function() gitsigns.diffthis '~' end, 'git [D]iff against last commit')
+        map('n', '<leader>hQ', function() gitsigns.setqflist 'all' end, 'git hunk [Q]uickfix list (all files in repo)')
+        map('n', '<leader>hq', gitsigns.setqflist, 'git hunk [q]uickfix list (this file)')
+        map('n', '<leader>tb', gitsigns.toggle_current_line_blame, '[T]oggle git show [b]lame line')
+        map('n', '<leader>tw', gitsigns.toggle_word_diff, '[T]oggle git intra-line [w]ord diff')
+        map({ 'o', 'x' }, 'ih', gitsigns.select_hunk, 'text object [i]nside [h]unk')
+      end,
     },
   },
   {
@@ -231,6 +304,7 @@ require('lazy').setup({
         { '<leader>t', group = '[T]oggle' },
         { '<leader>w', group = '[W]orkspace' },
         { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
+        { '<leader>g', group = '[G]it' },
         { 'gr', group = 'LSP Actions', mode = 'n' },
       },
     },
@@ -270,6 +344,7 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
       vim.keymap.set('n', '<leader>sc', builtin.commands, { desc = '[S]earch [C]ommands' })
       vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
+      vim.keymap.set('n', '<leader>gs', builtin.git_status, { desc = '[G]it [S]tatus' })
 
       vim.api.nvim_create_autocmd('LspAttach', {
         group = vim.api.nvim_create_augroup('telescope-lsp-attach', { clear = true }),
@@ -490,6 +565,7 @@ require('lazy').setup({
     config = function()
       require('mini.ai').setup { n_lines = 500 }
       require('mini.surround').setup()
+      require('mini.git').setup()
 
       local statusline = require 'mini.statusline'
       statusline.setup { use_icons = vim.g.have_nerd_font }
