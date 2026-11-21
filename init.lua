@@ -111,12 +111,12 @@ require('lazy').setup({
       'nvim-telescope/telescope.nvim',
     },
     opts = {
-	search = {
-		global_venvs = {
-			command = "fd '/bin/python$' ~/.venvs --full-path",
-		               },
-	         },
-          },
+      search = {
+        global_venvs = {
+          command = "fd '/bin/python$' ~/.venvs --full-path",
+        },
+      },
+    },
   },
   {
     'folke/flash.nvim',
@@ -176,7 +176,12 @@ require('lazy').setup({
           -- Skip while a session loads, and skip with no file buffers, so a good session is not overwritten.
           if vim.g.SessionLoad or not package.loaded.persistence or not require('persistence').active() then return end
           for _, b in ipairs(vim.api.nvim_list_bufs()) do
-            if vim.bo[b].buflisted and vim.bo[b].buftype == '' and vim.api.nvim_buf_get_name(b) ~= '' and not vim.tbl_contains({ 'gitcommit', 'gitrebase' }, vim.bo[b].filetype) then
+            if
+              vim.bo[b].buflisted
+              and vim.bo[b].buftype == ''
+              and vim.api.nvim_buf_get_name(b) ~= ''
+              and not vim.tbl_contains({ 'gitcommit', 'gitrebase' }, vim.bo[b].filetype)
+            then
               return require('persistence').save()
             end
           end
@@ -365,18 +370,28 @@ require('lazy').setup({
         end,
       })
 
-      vim.keymap.set('n', '<leader>/', function()
-        builtin.current_buffer_fuzzy_find(require('telescope.themes').get_dropdown {
-          winblend = 10,
-          previewer = false,
-        })
-      end, { desc = '[/] Fuzzily search in current buffer' })
-      vim.keymap.set('n', '<leader>s/', function()
-        builtin.live_grep {
-          grep_open_files = true,
-          prompt_title = 'Live Grep in Open Files',
-        }
-      end, { desc = '[S]earch [/] in Open Files' })
+      vim.keymap.set(
+        'n',
+        '<leader>/',
+        function()
+          builtin.current_buffer_fuzzy_find(require('telescope.themes').get_dropdown {
+            winblend = 10,
+            previewer = false,
+          })
+        end,
+        { desc = '[/] Fuzzily search in current buffer' }
+      )
+      vim.keymap.set(
+        'n',
+        '<leader>s/',
+        function()
+          builtin.live_grep {
+            grep_open_files = true,
+            prompt_title = 'Live Grep in Open Files',
+          }
+        end,
+        { desc = '[S]earch [/] in Open Files' }
+      )
       vim.keymap.set('n', '<leader>sn', function() builtin.find_files { cwd = vim.fn.stdpath 'config' } end, { desc = '[S]earch [N]eovim files' })
     end,
   },
@@ -437,9 +452,7 @@ require('lazy').setup({
           end
 
           if client and client:supports_method('textDocument/inlayHint', event.buf) then
-            map('<leader>th', function()
-              vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf })
-            end, '[T]oggle Inlay [H]ints')
+            map('<leader>th', function() vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf }) end, '[T]oggle Inlay [H]ints')
           end
         end,
       })
@@ -501,9 +514,7 @@ require('lazy').setup({
       notify_on_error = false,
       format_on_save = function(bufnr)
         local disable_filetypes = { c = true, cpp = true }
-        if disable_filetypes[vim.bo[bufnr].filetype] then
-          return nil
-        end
+        if disable_filetypes[vim.bo[bufnr].filetype] then return nil end
         return {
           timeout_ms = 500,
           lsp_format = 'fallback',
