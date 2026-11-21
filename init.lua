@@ -101,7 +101,7 @@ require('lazy').setup({
   },
   {
     'linux-cultist/venv-selector.nvim',
-    branch = 'regexp',
+    branch = 'main',
     cmd = 'VenvSelect',
     keys = {
       { ',v', '<cmd>VenvSelect<CR>', desc = 'Select virtualenv' },
@@ -110,7 +110,13 @@ require('lazy').setup({
       'neovim/nvim-lspconfig',
       'nvim-telescope/telescope.nvim',
     },
-    opts = {},
+    opts = {
+	search = {
+		global_venvs = {
+			command = "fd '/bin/python$' ~/.venvs --full-path",
+		               },
+	         },
+          },
   },
   {
     'folke/flash.nvim',
