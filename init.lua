@@ -64,11 +64,11 @@ vim.api.nvim_create_autocmd({ 'TermOpen', 'BufEnter', 'WinEnter' }, {
 
 -- naive terminal splits
 vim.api.nvim_create_user_command('Term', 'split | terminal', {
-    desc = 'naive terminal in a horizontal split'}
-)
+  desc = 'naive terminal in a horizontal split',
+})
 vim.api.nvim_create_user_command('Vterm', 'vsplit | terminal', {
-    desc = 'naive terminal in a vertical split'}
-)
+  desc = 'naive terminal in a vertical split',
+})
 
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
 if not (vim.uv or vim.loop).fs_stat(lazypath) then
@@ -584,6 +584,8 @@ require('lazy').setup({
     build = ':TSUpdate',
     branch = 'main',
     config = function()
+      require('nvim-treesitter').install { 'python' }
+
       vim.api.nvim_create_autocmd('FileType', {
         callback = function(args)
           local buf, filetype = args.buf, args.match
